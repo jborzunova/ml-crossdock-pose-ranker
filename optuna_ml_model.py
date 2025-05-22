@@ -1,3 +1,4 @@
+# conda activate ml
 import pandas as pd
 import numpy as np
 from xgboost import XGBRanker
@@ -8,10 +9,12 @@ from tqdm import tqdm
 from sklearn.decomposition import TruncatedSVD
 from sklearn.preprocessing import StandardScaler
 import numpy as np
+import optuna
 
 
 SEED = 2007
 N_SPLITS = 5
+METRIC = 'map@1'
 
 def reduce_dim(X, target_variance = 0.95):
     # ---- Уменьшение размерности данных ----
@@ -64,7 +67,7 @@ def plot_learning_curve(evals_results, fold):
         plt.grid(True)
         plt.show()
 
-def plot_combined_learning_curves(all_evals_results, metric='map@1'):
+def get_combined_learning_curve(all_evals_results, metric=METRIC):
     """
     all_evals_results: список словарей с результатами обучения (по фолдам)
                        каждый элемент соответствует одному фолду
@@ -79,25 +82,31 @@ def plot_combined_learning_curves(all_evals_results, metric='map@1'):
             continue
         curve = evals[metric]
         all_curves.append(curve)
-
     # Приводим к numpy и выравниваем по длине (если нужно)
     max_len = min(len(curve) for curve in all_curves)  # лучше брать min, чтобы не обрезать данные
     trimmed_curves = np.array([c[:max_len] for c in all_curves])
-
-    # Строим график
-    plt.figure(figsize=(10, 5))
-    for c in trimmed_curves:
-        plt.plot(range(1, max_len+1), c, color='gray', alpha=0.5)
-
     mean_curve = np.mean(trimmed_curves, axis=0)
-    plt.plot(range(1, max_len+1), mean_curve, color='red', linewidth=2, label='Средняя кривая')
+    return mean_curve
 
+
+def plot_combined_learning_curves(learning_curves_by_trial, study, metric=METRIC):
+    # Строим график для всех кривых обучения, полученных в цикле Optuna
+    plt.figure(figsize=(10, 5))
+    for trial_num, curve in learning_curves_by_trial.items():
+        color = 'red' if trial_num == study.best_trial.number else 'gray'
+        plt.plot(curve, color=color, linewidth=2, alpha=0.8)
+    #plt.plot(range(1, max_len+1), combined_curve, color='red', linewidth=2, label='Средняя кривая для кросс-валидации')
     plt.title(f'Кривая обучения XGBRanker (метрика: {metric})')
     plt.xlabel('Boosting итерации')
     plt.ylabel(metric)
     plt.grid(True)
     plt.legend()
     plt.tight_layout()
+    # ---- Вывод лучшей кривой обучения ---
+    best_trial_num = study.best_trial.number
+    best_curve = learning_curves_by_trial[best_trial_num]
+    print(f"\nBest Trial Number: {best_trial_num}")
+    print(f"Best Trial Learning Curve: {np.round(best_curve, 3)}")
     plt.show()
 
 
@@ -109,65 +118,82 @@ X_raw = extract_X(data)
 _, SVD_model = reduce_dim(X_raw)
 
 # ---- Data Training and LOLO Evaluation ----
-print("\n=== LOLO Evaluation ===")
-lolo_accuracies = []
-per_ligand_scores = []  # list of dicts for later plotting
+print("\n=== Optuna Parameters Optimization ===")
+#per_ligand_scores = []  # list of dicts for later plotting
 unique_ligands = data['init_ligand_file'].unique()
 evals_results = []
+learning_curves_by_trial = {}  # словарь для сохранения средних кривых обучения
+# для разных параметров модели (которые оптимизируются в процессе работы Optuna)
 
-for test_ligand in tqdm(unique_ligands, desc="LOLO Evaluation"):
-    # ---- Prepare Data ----
-    #print(test_ligand)
-    df_train = data[data['init_ligand_file'] != test_ligand].copy()
-    df_test = data[data['init_ligand_file'] == test_ligand].copy()
-    X_train, y_train, group_train = prepare_XGB_data(df_train, SVD_model)
-    X_test, y_test, group_test = prepare_XGB_data(df_test, SVD_model)
-    #print('X_train.shape, y_train.shape, group_train', X_train.shape, y_train.shape, group_train)
-    #print('X_test.shape, y_test.shape, group_test', X_test.shape, y_test.shape, group_test)
-    #print('the number of native-like poses in y_test =', len(y_test[y_test==1]))
-    # ---- Validation only on data with at least one native like pose ----
-    if 1 in y_test:  # Skip data if does not have any native-like pose. Nothing to range
-        model = XGBRanker(
-            objective='rank:ndcg',  # накладывает большой штраф на label==1, если он не в топе
-            eval_metric=['ndcg@1', 'map@1', 'map'], # следи за top-1 на валидации
-            learning_rate=0.05,  # Trying smaller learning rate
-            max_depth=4,         # Deeper trees might help
-            n_estimators=200,    # More trees might improve accuracy
-            subsample=0.8,       # Subsampling to prevent overfitting
-            colsample_bytree=0.8, # Randomizing features used by trees
-            random_state=SEED
-        )
-        model.fit(
-                    X_train, y_train,
-                    group=group_train,
-                    eval_set=[(X_test, y_test)],
-                    eval_group=[group_test],
-                    verbose=False
-                    )
-        evals_results.append(list(model.evals_result().values())[0])
+def objective(trial):
+    '''
+    This function helps find the best parameters for ML model
+    It trains the model and evaluate it on validation set with LOLO algorithm.
+    Then all Learning Curves (validation on each ligand) are gathered to obtain
+    a mean Learning Curve. The output of this function is the last point of it.
+    Based on this value the Optuna will decide which parameters give the best
+    result
+    '''
+    # ---- LOLO algorithm ----
+    for test_ligand in tqdm(unique_ligands,
+                            desc=f"LOLO Evaluation {trial.number}"):
+        # ---- Prepare Data ----
+        df_train = data[data['init_ligand_file'] != test_ligand].copy()
+        df_test = data[data['init_ligand_file'] == test_ligand].copy()
+        X_train, y_train, group_train = prepare_XGB_data(df_train, SVD_model)
+        X_test, y_test, group_test = prepare_XGB_data(df_test, SVD_model)
+        # ---- Validation only on data with at least one native like pose ----
+        if 1 in y_test:  # Skip data if does not have any native-like pose. Nothing to rank
+            params = {
+                        'objective': 'rank:ndcg',
+                        'eval_metric': METRIC,
+                        'learning_rate': trial.suggest_float('learning_rate', 0.01, 0.15, log=True),
+                        'max_depth': trial.suggest_int('max_depth', 3, 10),
+                        'min_child_weight': trial.suggest_int('min_child_weight', 1, 10),
+                        'gamma': trial.suggest_float('gamma', 0, 5),
+                        'n_estimators': 1000, # максимальное число итераций доступно
+                        'early_stopping_rounds': 200, # но если не происходит увеличения метрики в течение 30 шагов, остановись
+                        'subsample': trial.suggest_float('subsample', 0.6, 1.0),
+                        'colsample_bytree': trial.suggest_float('colsample_bytree', 0.6, 1.0), # Это доля признаков (фичей), которая будет случайно отобрана для построения каждого дерева.
+                        'random_state': SEED
+                      }
+            model = XGBRanker(**params)
+            model.fit(
+                        X_train, y_train,
+                        group=group_train,
+                        eval_set=[(X_test, y_test)],
+                        eval_group=[group_test],
+                        verbose=False
+                        )
+            evals_results.append(list(model.evals_result().values())[0])
+            '''
+            # ---- Data Retrieval for Threshold Choosing Plot ----
+            df_test['score'] = model.predict(X_test)
+            df_test['true_label'] = y_test
+            top_ranked = df_test.sort_values(by='score', ascending=False).groupby('init_ligand_file').head(1)
+            top_score = top_ranked['score'].iloc[0]
+            is_native_like = top_ranked['true_label'].iloc[0]
+            n_cl = top_ranked['n_cluster'].iloc[0]
+            per_ligand_scores.append({
+                'ligand': test_ligand,
+                'top_score': top_score,
+                'top_rank_is_native': is_native_like,
+        	    'n_cluster': n_cl
+            })
+            '''
+            # plot_learning_curve(evals_results, fold) # если нужно отследить обучение внутри одного прогона
+    # ---- Get the Result of Cross-Validation for Optuna ----
+    mean_curve = get_combined_learning_curve(evals_results)
+    learning_curves_by_trial[trial.number] = mean_curve
+    return mean_curve[-1]
 
-        # ---- Data Retrieval for Threshold Choosing Plot ----
-        df_test['score'] = model.predict(X_test)
-        df_test['true_label'] = y_test
-        top_ranked = df_test.sort_values(by='score', ascending=False).groupby('init_ligand_file').head(1)
-        top_score = top_ranked['score'].iloc[0]
-        is_native_like = top_ranked['true_label'].iloc[0]
-        n_cl = top_ranked['n_cluster'].iloc[0]
-        per_ligand_scores.append({
-            'ligand': test_ligand,
-            'top_score': top_score,
-            'top_rank_is_native': is_native_like,
-    	    'n_cluster': n_cl
-        })
-        # plot_learning_curve(evals_results, fold) # если нужно отследить обучение внутри одного прогона
-        #lolo_accuracies.append(top_ranked['true_label'].iloc[0])
-
-
-#print('lolo_accuracies', lolo_accuracies)
-#lolo_mean = np.mean(lolo_accuracies)
-#print(f"\nLOLO Top-1 Mean Accuracy for LOLO: {lolo_mean:.3f}")
+# ---- Optimize Model Parameters ----
+study = optuna.create_study(direction='maximize')
+study.optimize(objective, n_trials=100)
+print("Best params:", study.best_params)
+print("Best map@1:", study.best_value)
 # ---- Plot Learning Curves for Model Parameters Tuning ----
-plot_combined_learning_curves(evals_results)
+plot_combined_learning_curves(learning_curves_by_trial, study)
 
 '''
 # ---- Plot the Results for Threshold Choose ----
