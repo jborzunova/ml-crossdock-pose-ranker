@@ -1,11 +1,12 @@
-METRIC = 'map@1'
+METRIC = 'map@1'  # сейчас реализован вариант использования только одной метрики
 N_TRIALS = 2  # the number of Optuna tries to find good parameters
 N_ESTIMATORS = 1000  # максимальное число итераций доступно
 EARLY_STOPPING_ROUNDS = 20  # но если не происходит увеличения метрики в течение 30 шагов, остановись
 LEARNING_RATE_RANGE = (0.01, 0.15)
-MAX_DEPTH_RANGE = (3, 10)
-MIN_CHILD_WEIGHT = (1, 10)
+MAX_DEPTH_RANGE = (3, 6)
+MIN_CHILD_WEIGHT = (2, 10)
 GAMMA_RANGE = (0, 5)
-SUBSAMPLE_RANGE = (0.6, 1.0)
-COLSAMPLE_BYTREE = (0.6, 1.0)  # Это доля признаков (фичей), которая будет случайно отобрана для построения каждого дерева.
+SUBSAMPLE_RANGE = (0.6, 0.8)
+COLSAMPLE_BYTREE = (0.6, 0.8)  # Это доля признаков (фичей), которая будет случайно отобрана для построения каждого дерева.
 SEED = 2007
+TOP_K = 3  # количество лучших моделей с точки зрения Optuna, для которых показать график оуенки на train и val наборах

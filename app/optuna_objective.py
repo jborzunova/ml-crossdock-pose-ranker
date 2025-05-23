@@ -18,15 +18,15 @@ def make_objective(data, SVD_model, learning_curves_by_trial):
         unique_ligands = data['init_ligand_file'].unique()
         evals_results = []
         # ---- LOLO algorithm ----
-        for test_ligand in tqdm(unique_ligands,
+        for val_ligand in tqdm(unique_ligands[:3],
                                 desc=f"LOLO Evaluation {trial.number}"):
             # ---- Prepare Data ----
-            df_train = data[data['init_ligand_file'] != test_ligand].copy()
-            df_test = data[data['init_ligand_file'] == test_ligand].copy()
+            df_train = data[data['init_ligand_file'] != val_ligand].copy()
+            df_val = data[data['init_ligand_file'] == val_ligand].copy()
             X_train, y_train, group_train = prepare_XGB_data(df_train, SVD_model)
-            X_test, y_test, group_test = prepare_XGB_data(df_test, SVD_model)
+            X_val, y_val, group_val = prepare_XGB_data(df_val, SVD_model)
             # ---- Validation only on data with at least one native like pose ----
-            if 1 in y_test:  # Skip data if does not have any native-like pose. Nothing to rank
+            if 1 in y_val:  # Skip data if does not have any native-like pose. Nothing to rank
                 params = {
                             'objective': 'rank:ndcg',
                             'eval_metric': METRIC,
@@ -37,28 +37,34 @@ def make_objective(data, SVD_model, learning_curves_by_trial):
                             'subsample': trial.suggest_float('subsample', *SUBSAMPLE_RANGE),
                             'colsample_bytree': trial.suggest_float('colsample_bytree', *COLSAMPLE_BYTREE),
                             'n_estimators': N_ESTIMATORS,
-                            'early_stopping_rounds': EARLY_STOPPING_ROUNDS, 
+                            'early_stopping_rounds': EARLY_STOPPING_ROUNDS,
                             'random_state': SEED
                           }
                 model = XGBRanker(**params)
                 model.fit(
                             X_train, y_train,
                             group=group_train,
-                            eval_set=[(X_test, y_test)],
-                            eval_group=[group_test],
+                            eval_set=[(X_train, y_train), (X_val, y_val)], # сделать оценку на трейне тоже, чтобы проверить переобучаемость модели
+                            eval_group=[group_train, group_val],
                             verbose=False
                             )
-                evals_results.append(list(model.evals_result().values())[0])
+                raw_result = model.evals_result()
+                # Переименование ключей вручную
+                mapped_result = {
+                    'train': raw_result.get('validation_0', {}),
+                    'valid': raw_result.get('validation_1', {})
+                }
+                evals_results.append(mapped_result)
                 '''
                 # ---- Data Retrieval for Threshold Choosing Plot ----
-                df_test['score'] = model.predict(X_test)
-                df_test['true_label'] = y_test
-                top_ranked = df_test.sort_values(by='score', ascending=False).groupby('init_ligand_file').head(1)
+                df_val['score'] = model.predict(X_val)
+                df_val['true_label'] = y_val
+                top_ranked = df_val.sort_values(by='score', ascending=False).groupby('init_ligand_file').head(1)
                 top_score = top_ranked['score'].iloc[0]
                 is_native_like = top_ranked['true_label'].iloc[0]
                 n_cl = top_ranked['n_cluster'].iloc[0]
                 per_ligand_scores.append({
-                    'ligand': test_ligand,
+                    'ligand': val_ligand,
                     'top_score': top_score,
                     'top_rank_is_native': is_native_like,
             	    'n_cluster': n_cl
@@ -66,7 +72,8 @@ def make_objective(data, SVD_model, learning_curves_by_trial):
                 '''
                 # plot_learning_curve(evals_results, fold) # если нужно отследить обучение внутри одного прогона
         # ---- Get the Result of Cross-Validation for Optuna ----
-        mean_curve = get_combined_learning_curve(evals_results)
-        learning_curves_by_trial[trial.number] = mean_curve
-        return mean_curve[-1]
+        # mean_curves - это 2 кривые обучения (оцененные по трейну или по валидационному сетам и усредненные по кросс-валидации)
+        mean_curves = get_combined_learning_curves(evals_results, metric="map@1")
+        learning_curves_by_trial[trial.number] = mean_curves
+        return mean_curves['valid'][-1]  # оптимизатор опирается на метрику, оуененную по валидационному сету
     return objective

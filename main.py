@@ -31,8 +31,9 @@ if __name__ == "__main__":
     print("Best params:", study.best_params)
     print("Best map@1:", study.best_value)
     # ---- Plot Learning Curves for Model Parameters Tuning ----
-    plot_combined_learning_curves(learning_curves_by_trial, study)
-
+    print('learning_curves_by_trial =', learning_curves_by_trial)
+    plot_all_valid_learning_curves(learning_curves_by_trial, study)
+    plot_topk_train_val_learning_curves(learning_curves_by_trial, study)
 
 '''
 # ---- Plot the Results for Threshold Choose ----
