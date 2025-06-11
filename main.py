@@ -6,7 +6,7 @@ import optuna
 
 if __name__ == "__main__":
     # ---- Data Preparation ----
-    data = read_merge_data('./data_train_crossdock_rmsd_ccf.csv')  # Загрузка данных
+    data = read_merge_data('./data_crossdock_rmsd_ccf.csv')  # Загрузка данных
     X_raw = extract_X(data)
     _, SVD_model = reduce_dim(X_raw)
 

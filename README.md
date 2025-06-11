@@ -15,6 +15,9 @@ This project ranks docking poses so that the top-1 pose is native-like, improvin
 
 `````
 ├── app/ # Application code 
+├── images/
+│   ├── all_valid_learning_curves.png
+│   └── topk_learning_curves.png
 ├── data_crossdock_rmsd_ccf.csv # Dataset in CSV format
 ├── main.py # Main script for training or inference
 ├── parameters.py # Configuration and parameters for the model
@@ -37,6 +40,21 @@ Run training or inference with:
 	python3 main.py
 
 Customize parameters in parameters.py.
+
+## Results
+
+### Validation Learning Curves from Optuna Trials
+![All Validation Learning Curves](images/all_valid_learning_curves.png)
+
+This figure shows all validation learning curves obtained during hyperparameter optimization with **Optuna**.  
+The validation was performed using the **Leave-One-Ligand-Out (LOLO)** strategy to ensure robust generalization across ligands.  
+The **best-performing trial** (as selected by Optuna) is highlighted in **red**.
+
+### Top-K Learning Curves (Train & Validation)
+![Top-K Learning Curves](images/topk_learning_curves.png)
+
+This plot illustrates training and validation curves for the **top-K models** (ranked by validation performance).  
+It provides insight into model convergence and stability across the most successful configurations.
 
 License: [No license yet]
 
