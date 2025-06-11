@@ -36,24 +36,21 @@ source venv/bin/activate  # Linux/macOS
 
 Install dependencies listed in requirements.txt
 
-(Note: You might want to add requirements.txt listing your Python packages.)
-Usage
+Usage:
 
-	Run training or inference with:
+Run training or inference with:
 
-		python main.py
+	python3 main.py
 
-	Or run the best saved model:
+Or run the best saved model:
 
-		python run_best_model.py
+	python3 run_best_model.py
 
 Customize parameters in parameters.py.
 
-License
+License: [No license yet]
 
-	[No license yet]
+Contact:
 
-Contact
-
-	Julia Borzunova — [j.n.borzunova@yandex.ru]
+Julia Borzunova — [j.n.borzunova@yandex.ru]
 GitHub: https://github.com/jborzunova
