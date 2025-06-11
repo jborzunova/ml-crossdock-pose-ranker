@@ -3,7 +3,7 @@
 **Machine Learning model (XGBRanker) for cross-docking pose ranking.**  
 This project ranks docking poses so that the top-1 pose is native-like, improving accuracy in molecular docking tasks.
 
-> **⚠️ Note:** This project is still under active development.
+> **⚠️ Note:** This project is still under active development and intended to be published in a scientific article.
 >
 > - The figures shown below are **preliminary** and may change.
 > - The dataset features are still being refined and extended.
@@ -61,6 +61,10 @@ The **best-performing trial** (as selected by Optuna) is highlighted in **red**.
 
 This plot illustrates training and validation curves for the **top-K models** (ranked by validation performance).  
 It provides insight into model convergence and stability across the most successful configurations.
+
+### Dataset
+
+The actual dataset is not included due to confidentiality. 
 
 License: [No license yet]
 
