@@ -20,7 +20,7 @@ def plot_all_valid_learning_curves(learning_curves_by_trial, study):
             continue
         color = 'red' if trial_num == study.best_trial.number else 'gray'
         plt.plot(valid_curve, color=color, linewidth=2, alpha=0.8, label=f"Trial {trial_num}" if trial_num == study.best_trial.number else None)
-    
+
     plt.title(f"Validation Learning Curves (metric: {METRIC})")
     plt.xlabel("Boosting Iterations")
     plt.ylabel(METRIC)
@@ -28,7 +28,7 @@ def plot_all_valid_learning_curves(learning_curves_by_trial, study):
     plt.legend()
     plt.tight_layout()
 
-    # ---- Вывод лучшей кривой обучения ---
+    # ---- The best Learning Curve ---
     best_trial_num = study.best_trial.number
     best_curve = learning_curves_by_trial[best_trial_num]['valid']
     print(f"\nBest Trial Number: {best_trial_num}")
@@ -82,4 +82,3 @@ def plot_topk_train_val_learning_curves(learning_curves_by_trial, study, top_k=5
     plt.tight_layout()
     plt.savefig(f"images/topk_learning_curves.png", dpi=300)
     plt.show()
-

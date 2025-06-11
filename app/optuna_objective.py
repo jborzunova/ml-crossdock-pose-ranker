@@ -44,36 +44,21 @@ def make_objective(data, SVD_model, learning_curves_by_trial):
                 model.fit(
                             X_train, y_train,
                             group=group_train,
-                            eval_set=[(X_train, y_train), (X_val, y_val)], # сделать оценку на трейне тоже, чтобы проверить переобучаемость модели
+                            eval_set=[(X_train, y_train), (X_val, y_val)], # Also evaluate on the training set to check for model overfitting
                             eval_group=[group_train, group_val],
                             verbose=False
                             )
                 raw_result = model.evals_result()
-                # Переименование ключей вручную
+                # Renaming automatic keys from Optuna manually
                 mapped_result = {
                     'train': raw_result.get('validation_0', {}),
                     'valid': raw_result.get('validation_1', {})
                 }
                 evals_results.append(mapped_result)
-                '''
-                # ---- Data Retrieval for Threshold Choosing Plot ----
-                df_val['score'] = model.predict(X_val)
-                df_val['true_label'] = y_val
-                top_ranked = df_val.sort_values(by='score', ascending=False).groupby('init_ligand_file').head(1)
-                top_score = top_ranked['score'].iloc[0]
-                is_native_like = top_ranked['true_label'].iloc[0]
-                n_cl = top_ranked['n_cluster'].iloc[0]
-                per_ligand_scores.append({
-                    'ligand': val_ligand,
-                    'top_score': top_score,
-                    'top_rank_is_native': is_native_like,
-            	    'n_cluster': n_cl
-                })
-                '''
-                # plot_learning_curve(evals_results, fold) # если нужно отследить обучение внутри одного прогона
+
         # ---- Get the Result of Cross-Validation for Optuna ----
-        # mean_curves - это 2 кривые обучения (оцененные по трейну или по валидационному сетам и усредненные по кросс-валидации)
+        # mean_curves - is 2 Learning Curves
         mean_curves = get_combined_learning_curves(evals_results, metric="map@1")
         learning_curves_by_trial[trial.number] = mean_curves
-        return mean_curves['valid'][-1]  # оптимизатор опирается на метрику, оуененную по валидационному сету
+        return mean_curves['valid'][-1]  # The optimizer relies on the metric evaluated on the validation set
     return objective
