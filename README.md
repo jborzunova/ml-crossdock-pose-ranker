@@ -15,7 +15,7 @@ This project ranks docking poses so that the top-1 pose is native-like, improvin
 
 `````
 ├── app/ # Application code 
-├── data_train_crossdock_rmsd_ccf.csv # Dataset in CSV format
+├── data_crossdock_rmsd_ccf.csv # Dataset in CSV format
 ├── main.py # Main script for training or inference
 ├── parameters.py # Configuration and parameters for the model
 ├── README.md # This documentation file
@@ -52,8 +52,9 @@ python run_best_model.py
 Customize parameters in parameters.py.
 License
 
-[Choose your license here, e.g., MIT License]
+[No license yet]
+
 Contact
 
-Julia Lopanskaia — [your_email@example.com]
+Julia Borzunova — [j.n.borzunova@yandex.ru]
 GitHub: https://github.com/jborzunova
