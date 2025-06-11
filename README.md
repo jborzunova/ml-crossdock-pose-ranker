@@ -62,9 +62,13 @@ The **best-performing trial** (as selected by Optuna) is highlighted in **red**.
 This plot illustrates training and validation curves for the **top-K models** (ranked by validation performance).  
 It provides insight into model convergence and stability across the most successful configurations.
 
-### Dataset
+## Dataset
 
-The actual dataset is not included due to confidentiality. 
+The dataset used in this project currently consists of **CCF fingerprints** representing molecular features relevant for cross-docking pose ranking.  
+
+These fingerprints capture key chemical characteristics and serve as input features for the XGBRanker model.  
+
+**Note:** Feature engineering is ongoing, and additional descriptors may be added in future updates.
 
 License: [No license yet]
 
