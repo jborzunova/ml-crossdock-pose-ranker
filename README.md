@@ -5,7 +5,7 @@ This project ranks docking poses so that the top-1 pose is native-like, improvin
 
 > **⚠️ Note:** This project is still under active development.
 >
-> - The figures shown above are **preliminary** and may change.
+> - The figures shown below are **preliminary** and may change.
 > - The dataset features are still being refined and extended.
 > - Code, documentation, and results will be updated regularly as the project evolves.
 
