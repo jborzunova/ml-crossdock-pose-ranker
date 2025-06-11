@@ -28,23 +28,13 @@ This project ranks docking poses so that the top-1 pose is native-like, improvin
    git clone git@github.com:jborzunova/ml-crossdock-pose-ranker.git
    cd ml-crossdock-pose-ranker
 
-    (Optional) Create and activate a virtual environment:
-
-python -m venv venv
-source venv/bin/activate  # Linux/macOS
-.\venv\Scripts\activate   # Windows
-
-Install dependencies listed in requirements.txt
+    (Optional) Create and activate a virtual environment. Install dependencies listed in requirements.txt
 
 Usage:
 
 Run training or inference with:
 
 	python3 main.py
-
-Or run the best saved model:
-
-	python3 run_best_model.py
 
 Customize parameters in parameters.py.
 
