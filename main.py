@@ -3,10 +3,11 @@ from app.optuna_objective import make_objective
 from app.preprocessing import *
 from app.plots import *
 import optuna
+import pandas as pd
 
 if __name__ == "__main__":
     # ---- Data Preparation ----
-    data = read_merge_data('./data_crossdock_rmsd_ccf.csv')
+    data = pd.read_csv('./data_cross_ccf_rmsd.csv')
     X_raw = extract_X(data)
     _, SVD_model = reduce_dim(X_raw)
 

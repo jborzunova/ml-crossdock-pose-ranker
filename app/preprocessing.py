@@ -6,26 +6,6 @@ from sklearn.preprocessing import StandardScaler
 from parameters import *
 
 
-def change_filename(row):
-    return row['file'].replace('.pdb', '')
-
-
-def read_merge_data(dataset):
-    data = pd.read_csv(dataset)
-    print(data.columns)
-    print('init shape of data:', data.shape)
-    data2 = pd.read_csv('/home/oem/research/colchicine_site/data.csv')  # cluster info
-    print('shape of docking data:', data2.shape)
-    data2 = data2[['file', 'n_cluster', 'fold_0', 'fold_1', 'fold_2', 'fold_3', 'fold_4']]
-    data2['file'] = data2.apply(change_filename, axis=1)
-    data = data.merge(data2, how='left', right_on='file', left_on='init_ligand_file')
-    data.drop(columns=['file'], inplace=True)
-    print(data.columns)
-    print('len of data after merge', len(data))
-    print('Finished')
-    return data
-
-
 def reduce_dim(X, target_variance=0.95):
     # ---- Dimensionality reduction ----
     # --- Auto-select n_components based on explained variance ---
