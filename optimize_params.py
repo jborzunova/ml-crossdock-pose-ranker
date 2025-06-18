@@ -4,6 +4,7 @@ from app.preprocessing import *
 from app.plots import *
 import optuna
 import pandas as pd
+import json
 
 if __name__ == "__main__":
     # ---- Data Preparation ----
@@ -29,6 +30,8 @@ if __name__ == "__main__":
     # ---- Optimize Model Parameters ----
     study = optuna.create_study(direction='maximize')
     study.optimize(objective, n_trials=N_TRIALS)
+    with open("best_params.json", "w") as f:
+        json.dump(study.best_params, f)
     print("Best params:", study.best_params)
     print("Best map@1:", study.best_value)
     # ---- Plot Learning Curves for Model Parameters Tuning ----
