@@ -1,4 +1,8 @@
-METRIC = 'map@1'  # currently only single-metric evaluation is implemented
+DATA_PATH = "./data/data_cross_ccf_rmsd.csv"       # Замените на путь к новым данным
+SVD_MODEL_PATH = "models/svd_model.joblib"
+PARAMS_PATH = "models/best_params.json"         # Параметры, полученные после Optuna
+OBJECTIVE = 'rank:ndcg'
+METRIC = 'ndcg@1'  # currently only single-metric evaluation is implemented
 N_TRIALS = 2  # number of Optuna trials to find good hyperparameters
 N_ESTIMATORS = 1000  # maximum number of boosting iterations
 EARLY_STOPPING_ROUNDS = 20  # stop if the metric doesn't improve for 20 consecutive rounds

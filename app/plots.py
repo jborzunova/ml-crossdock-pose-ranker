@@ -75,10 +75,32 @@ def plot_topk_train_val_learning_curves(learning_curves_by_trial, study, top_k=5
             plt.plot(curve, label=label, linestyle=linestyle, color=color, linewidth=lw, alpha=0.9, zorder=zorder)
 
     plt.xlabel("Boosting iterations")
-    plt.ylabel("map@1")
+    plt.ylabel(METRIC)
     plt.title(f"Top-{top_k} Learning Curves (train & valid) - XGBRanker")
     plt.legend()
     plt.grid(True)
     plt.tight_layout()
     plt.savefig(f"images/topk_learning_curves.png", dpi=300)
+    plt.show()
+
+
+def plot_train_val_lc(curves):
+
+    plt.figure(figsize=(12, 6))
+
+    for set_name in ['train', 'valid']:
+        curve = curves.get(set_name)
+        if curve is None:
+            continue
+        linestyle = '--' if set_name == 'train' else '-'
+
+        plt.plot(curve, linestyle=linestyle, color='black', alpha=0.9)
+
+    plt.xlabel("Boosting iterations")
+    plt.ylabel(METRIC)
+    plt.title(f"Learning Curves (train & valid) - XGBRanker")
+    #plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+    plt.savefig(f"images/best_model_learning_curves.png", dpi=300)
     plt.show()
