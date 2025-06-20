@@ -4,20 +4,21 @@ from app.preprocessing import *
 from app.plots import *
 import optuna
 import pandas as pd
+from sklearn.preprocessing import OneHotEncoder
 import json
 import joblib
 
+
 if __name__ == "__main__":
     # ---- Data Preparation ----
-    data = pd.read_csv(DATA_PATH, index_col=0)
-    data['label'] = data['rmsd'].apply(rmsd_to_relevance)
-    data = drop_zero_label_groups(data)  # в обучении и валидации эти данные не нужны. Только в тесте, после
-    #data = rmsd2rank(data)  # add columns label and rank (xgbranker works only with discrete y)
-
-    #X_raw = extract_X(data)
-    #_, SVD_model = reduce_dim(X_raw)
+    data, ccf_data = data_read_prep()
+    #_, SVD_model = reduce_dim(ccf_data)
     #joblib.dump(SVD_model, SVD_MODEL_PATH)  # save for run_best_model
     SVD_model = joblib.load(SVD_MODEL_PATH)  # for speed
+
+    ohe = OneHotEncoder(sparse_output=False, handle_unknown='ignore')
+    ohe.fit(data[['protein']])
+    joblib.dump(ohe, OHE_ENCODER_PATH)
 
     # ---- Data Training and LOLO Evaluation ----
     print("\n=== Optuna Parameters Optimization ===")
@@ -25,12 +26,10 @@ if __name__ == "__main__":
     learning_curves_by_trial = {}  # dictionary to store averaged learning curves
     # for different model parameters being optimized by Optuna
 
-    # create the objective function
-    # objective(trial) must have access to certain variables
-    # but still follow the required Optuna format: objective(trial)
     objective = make_objective(
                     data=data,
                     SVD_model=SVD_model,
+                    ohe=ohe,
                     learning_curves_by_trial=learning_curves_by_trial
                     )
 

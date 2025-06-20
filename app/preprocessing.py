@@ -2,8 +2,26 @@ import pandas as pd
 import numpy as np
 import pandas as pd
 from sklearn.decomposition import TruncatedSVD
-from sklearn.preprocessing import StandardScaler
 from parameters import *
+
+def data_read_prep():
+    data = pd.read_csv(DATA_PATH, index_col=0)
+    data['label'] = data['rmsd'].apply(rmsd_to_relevance)
+    data = drop_zero_label_groups(data)  # в обучении и валидации эти данные не нужны. Только в тесте, после
+    #print('data.columns', data.columns)
+    ccf_data = extract_ccf(data)
+    #print('ccf_data.columns', ccf_data.columns)
+    return data, ccf_data
+
+
+def ohe_receptor(data, ohe_encoder):
+    ohe_features = ohe_encoder.transform(data[['protein']])
+    ohe_feature_names = ohe_encoder.get_feature_names_out(['protein'])
+    ohe_df = pd.DataFrame(ohe_features, columns=ohe_feature_names, index=data.index)
+    data_combined = pd.concat([data.reset_index(drop=True), ohe_df], axis=1)
+    data_combined = data_combined.drop(columns=['protein'])
+    #print('data columns after ohe:', data_combined.columns)
+    return data_combined
 
 
 def rmsd_to_relevance(rmsd: float) -> int:
@@ -14,7 +32,6 @@ def rmsd_to_relevance(rmsd: float) -> int:
         return 1  # relevant
     else:
         return 0  # weakly relevant
-
 
 
 def drop_zero_label_groups(data: pd.DataFrame, group_col: str = 'ligand', label_col: str = 'label') -> pd.DataFrame:
@@ -37,27 +54,6 @@ def drop_zero_label_groups(data: pd.DataFrame, group_col: str = 'ligand', label_
     return data[data[group_col].isin(valid_group_ids)].reset_index(drop=True)
 
 
-'''
-def rmsd2rank(df):
-    """
-    Adds two columns to the dataframe:
-    - 'rank': rank of each pose within its group (lower RMSD = higher rank)
-    - 'label': 1 if RMSD <= 2.0 Å, otherwise 0
-
-    Ranking is done within each ligand group.
-    """
-    df = df.copy()
-
-    # Assign label: 1 if RMSD <= 2 Å, else 0
-    df['label'] = (df['rmsd'] <= 2.0).astype(int)
-
-    # Rank poses within each ligand group by RMSD (lower RMSD = better rank)
-    # Ranking starts from 1; equal values receive the same rank (dense ranking)
-    df['rank'] = df.groupby('ligand')['rmsd'].rank(method='dense', ascending=True).astype(int)
-
-    return df
-'''
-
 def reduce_dim(X, target_variance=0.95):
     # ---- Dimensionality reduction ----
     # --- Auto-select n_components based on explained variance ---
@@ -78,21 +74,24 @@ def reduce_dim(X, target_variance=0.95):
     return X_reduced, svd
 
 
-def prepare_XGB_data(df, svd_model, target_variance=0.95):
-    # Sorting is required for the ranker model!
-    # (The 'group' list tells the model the size of sequential groups)
+def prepare_XGB_data(df, svd_model, ohe_encoder, target_variance=0.95):
+    # Sort the data for ranking
     df = df.sort_values(by='ligand').reset_index(drop=True)
-
+    # Apply one-hot encoding to receptor_id
+    df = ohe_receptor(df, ohe_encoder)
+    # Target and group
     y = df['label'].values
-    X_raw = extract_X(df)
-    X_reduced = svd_model.transform(X_raw)
-
-    # Calculate the size of each group
     group = df.groupby('ligand').size().tolist()
-    return X_reduced, y, group
+    # Extract the fingerprint features and apply SVD
+    ccf_raw = extract_ccf(df)  # should return only fingerprint columns
+    ccf_reduced = svd_model.transform(ccf_raw)
+    # Extract one-hot encoded receptor columns (starts with "receptor_")
+    receptor_features = df.filter(regex='^protein_').values
+    # Concatenate SVD-reduced fingerprint and receptor one-hot features
+    X_combined = np.hstack([ccf_reduced, receptor_features])
+    return X_combined, y, group
 
 
-def extract_X(df):
-    return df.drop(columns=['ligand', 'protein', 'rmsd', 'label',
-                            'mol_weight', 'lig_cluster', 'pr_cluster',
-                            'docking_type'])
+def extract_ccf(df):
+    # Select only columns that are named with digits, like '0', '1', '2' ...
+    return df[[col for col in df.columns if col.isdigit()]]

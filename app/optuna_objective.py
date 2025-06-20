@@ -5,7 +5,7 @@ from tqdm import tqdm
 from parameters import *
 
 
-def make_objective(data, SVD_model, learning_curves_by_trial):
+def make_objective(data, SVD_model, ohe, learning_curves_by_trial):
     '''
     This function helps find the best parameters for ML model
     It trains the model and evaluate it on validation set with LOLO algorithm.
@@ -15,17 +15,18 @@ def make_objective(data, SVD_model, learning_curves_by_trial):
     result
     '''
     def objective(trial):
-        unique_ligands = data['ligand'].unique()
+        unique_clusters = data['lig_cluster'].unique()
         evals_results = []
         # ---- LOLO algorithm ----
-        for val_ligand in tqdm(unique_ligands,
-                                desc=f"LOLO Evaluation {trial.number}"):
-            #print(val_ligand)
+        for val_cluster in tqdm(unique_clusters,
+                                desc=f"LOCO Evaluation {trial.number}"):
             # ---- Prepare Data ----
-            df_train = data[data['ligand'] != val_ligand].copy()
-            df_val = data[data['ligand'] == val_ligand].copy()
-            X_train, y_train, group_train = prepare_XGB_data(df_train, SVD_model)
-            X_val, y_val, group_val = prepare_XGB_data(df_val, SVD_model)
+            df_train = data[data['lig_cluster'] != val_cluster].copy()
+            df_val = data[data['lig_cluster'] == val_cluster].copy()
+            #print(f'ligands of cluster {val_cluster}:', df_val['ligand'].unique())
+
+            X_train, y_train, group_train = prepare_XGB_data(df_train, SVD_model, ohe)
+            X_val, y_val, group_val = prepare_XGB_data(df_val, SVD_model, ohe)
             #print(X_train.shape, y_train.shape, len(group_train))
             #print(X_val.shape, y_val.shape, len(group_val))
             # ---- Validation only on data with at least one native like pose ----
@@ -64,9 +65,9 @@ def make_objective(data, SVD_model, learning_curves_by_trial):
 
         # ---- Get the Result of Cross-Validation for Optuna ----
         # mean_curves - is 2 Learning Curves
-        print('evals_results', evals_results)
+        #print('evals_results', evals_results)
         mean_curves = get_combined_learning_curves(evals_results, metric=METRIC)
-        print('mean_curves =', mean_curves)
+        #print('mean_curves =', mean_curves)
         learning_curves_by_trial[trial.number] = mean_curves
         return mean_curves['valid'][-1]  # The optimizer relies on the metric evaluated on the validation set
     return objective
