@@ -27,11 +27,11 @@ if __name__ == "__main__":
     # for different model parameters being optimized by Optuna
 
     objective = make_objective(
-                    data=data,
-                    SVD_model=SVD_model,
-                    ohe=ohe,
-                    learning_curves_by_trial=learning_curves_by_trial
-                    )
+                                data=data,
+                                SVD_model=SVD_model,
+                                ohe=ohe,
+                                learning_curves_by_trial=learning_curves_by_trial
+                               )
 
     # ---- Optimize Model Parameters ----
     study = optuna.create_study(direction='maximize')

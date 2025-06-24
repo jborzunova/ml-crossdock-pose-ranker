@@ -36,7 +36,9 @@ if __name__ == "__main__":
         #print(f'ligands of cluster {val_cluster}:', df_val['ligand'].unique())
 
         X_train, y_train, group_train = prepare_XGB_data(df_train, SVD_model, ohe_encoder)
+        #print('X_train.shape', X_train.shape)
         X_val, y_val, group_val = prepare_XGB_data(df_val, SVD_model, ohe_encoder)
+        #print('X_val.shape', X_val.shape)
         model.fit(
                         X_train, y_train,
                         group=group_train,

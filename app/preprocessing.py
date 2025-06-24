@@ -4,6 +4,7 @@ import pandas as pd
 from sklearn.decomposition import TruncatedSVD
 from parameters import *
 
+
 def data_read_prep():
     data = pd.read_csv(DATA_PATH, index_col=0)
     data['label'] = data['rmsd'].apply(rmsd_to_relevance)
