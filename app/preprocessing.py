@@ -55,7 +55,7 @@ def drop_zero_label_groups(data: pd.DataFrame, group_col: str = 'ligand', label_
     return data[data[group_col].isin(valid_group_ids)].reset_index(drop=True)
 
 
-def reduce_dim(X, target_variance=0.95):
+def reduce_dim(X, target_variance=TARGET_VARIANCE):
     # ---- Dimensionality reduction ----
     # --- Auto-select n_components based on explained variance ---
     print('Reducing Dimensions of Data ...')
@@ -75,11 +75,9 @@ def reduce_dim(X, target_variance=0.95):
     return X_reduced, svd
 
 
-def prepare_XGB_data(df, svd_model, ohe_encoder, target_variance=0.95):
+def prepare_XGB_data(df, svd_model):
     # Sort the data for ranking
     df = df.sort_values(by='ligand').reset_index(drop=True)
-    # Apply one-hot encoding to receptor_id
-    df = ohe_receptor(df, ohe_encoder)
     # Target and group
     y = df['label'].values
     group = df.groupby('ligand').size().tolist()
@@ -87,10 +85,24 @@ def prepare_XGB_data(df, svd_model, ohe_encoder, target_variance=0.95):
     ccf_raw = extract_ccf(df)  # should return only fingerprint columns
     ccf_reduced = svd_model.transform(ccf_raw)
     # Extract one-hot encoded receptor columns (starts with "receptor_")
-    receptor_features = df.filter(regex='^protein_').values
+    mol_weight_features = df[['mol_weight_ligand', 'mol_weight_native']].values
+    delta_mol_weight_features = (df['mol_weight_ligand'] - df['mol_weight_native']).values.reshape(-1, 1)
+    abs_delta_mol_weight_features = np.abs(df["mol_weight_ligand"] - df["mol_weight_native"]).values.reshape(-1, 1)
+
     # Concatenate SVD-reduced fingerprint and receptor one-hot features
-    X_combined = np.hstack([ccf_reduced, receptor_features])
-    return X_combined, y, group
+    X_combined = np.hstack([ccf_reduced, mol_weight_features, delta_mol_weight_features, abs_delta_mol_weight_features])
+
+    # Calculate weights based on lig_cluster frequency
+    cluster_counts = df['lig_cluster'].value_counts() / 88
+    print('cluster_counts', cluster_counts)
+    df['weight'] = 1.0 / df['lig_cluster'].map(cluster_counts)
+    df['weight'] /= df['weight'].mean()  # normalize
+
+    # Aggregate to ligand group level
+    group_weights = df.groupby('ligand')['weight'].mean()
+    print('group_weights', group_weights)  # should equal number of groups (ligands)
+
+    return X_combined, y, group, group_weights
 
 
 def extract_ccf(df):

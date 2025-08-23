@@ -5,7 +5,7 @@ from tqdm import tqdm
 from parameters import *
 
 
-def make_objective(data, SVD_model, ohe, learning_curves_by_trial):
+def make_objective(data, SVD_model, learning_curves_by_trial):
     '''
     This function helps find the best parameters for ML model
     It trains the model and evaluate it on validation set with LOLO algorithm.
@@ -25,11 +25,10 @@ def make_objective(data, SVD_model, ohe, learning_curves_by_trial):
             df_val = data[data['lig_cluster'] == val_cluster].copy()
             #print(f'ligands of cluster {val_cluster}:', df_val['ligand'].unique())
 
-            X_train, y_train, group_train = prepare_XGB_data(df_train, SVD_model, ohe)
-            X_val, y_val, group_val = prepare_XGB_data(df_val, SVD_model, ohe)
+            X_train, y_train, group_train = prepare_XGB_data(df_train, SVD_model)
+            X_val, y_val, group_val = prepare_XGB_data(df_val, SVD_model)
             #print(X_train.shape, y_train.shape, len(group_train))
             #print(X_val.shape, y_val.shape, len(group_val))
-            # ---- Validation only on data with at least one native like pose ----
             #print('y_val', y_val)
             params = {
                         'objective': OBJECTIVE,

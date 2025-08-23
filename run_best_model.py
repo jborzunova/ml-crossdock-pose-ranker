@@ -14,7 +14,6 @@ if __name__ == "__main__":
     # === Load data ===
     data, _ = data_read_prep()
     SVD_model = joblib.load(SVD_MODEL_PATH)
-    ohe_encoder = joblib.load(OHE_ENCODER_PATH)
     # === Load best params ===
     with open(PARAMS_PATH, "r") as f:
         best_params = json.load(f)
@@ -35,13 +34,18 @@ if __name__ == "__main__":
         df_val = data[data['lig_cluster'] == val_cluster].copy()
         #print(f'ligands of cluster {val_cluster}:', df_val['ligand'].unique())
 
-        X_train, y_train, group_train = prepare_XGB_data(df_train, SVD_model, ohe_encoder)
+        X_train, y_train, group_train, weights_train = prepare_XGB_data(df_train, SVD_model)
+        print('weights_train', weights_train)
         #print('X_train.shape', X_train.shape)
-        X_val, y_val, group_val = prepare_XGB_data(df_val, SVD_model, ohe_encoder)
+        X_val, y_val, group_val, _ = prepare_XGB_data(df_val, SVD_model)
         #print('X_val.shape', X_val.shape)
+        #print('X_val', X_val)
+        #print('y_val', y_val)
+        #print('group_val', group_val)
         model.fit(
                         X_train, y_train,
                         group=group_train,
+                        sample_weight=weights_train,
                         eval_set=[(X_train, y_train), (X_val, y_val)], # Also evaluate on the training set to check for model overfitting
                         eval_group=[group_train, group_val],
                         verbose=False
