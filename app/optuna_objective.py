@@ -25,8 +25,8 @@ def make_objective(data, SVD_model, learning_curves_by_trial):
             df_val = data[data['lig_cluster'] == val_cluster].copy()
             #print(f'ligands of cluster {val_cluster}:', df_val['ligand'].unique())
 
-            X_train, y_train, group_train = prepare_XGB_data(df_train, SVD_model)
-            X_val, y_val, group_val = prepare_XGB_data(df_val, SVD_model)
+            X_train, y_train, group_train, weights_train = prepare_XGB_data(df_train, SVD_model)
+            X_val, y_val, group_val, _ = prepare_XGB_data(df_val, SVD_model)
             #print(X_train.shape, y_train.shape, len(group_train))
             #print(X_val.shape, y_val.shape, len(group_val))
             #print('y_val', y_val)
@@ -47,6 +47,7 @@ def make_objective(data, SVD_model, learning_curves_by_trial):
             model.fit(
                             X_train, y_train,
                             group=group_train,
+                            sample_weight=weights_train,
                             eval_set=[(X_train, y_train), (X_val, y_val)], # Also evaluate on the training set to check for model overfitting
                             eval_group=[group_train, group_val],
                             verbose=False

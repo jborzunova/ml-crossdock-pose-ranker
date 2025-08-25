@@ -94,13 +94,13 @@ def prepare_XGB_data(df, svd_model):
 
     # Calculate weights based on lig_cluster frequency
     cluster_counts = df['lig_cluster'].value_counts() / 88
-    print('cluster_counts', cluster_counts)
+    #print('cluster_counts', cluster_counts)
     df['weight'] = 1.0 / df['lig_cluster'].map(cluster_counts)
     df['weight'] /= df['weight'].mean()  # normalize
 
     # Aggregate to ligand group level
     group_weights = df.groupby('ligand')['weight'].mean()
-    print('group_weights', group_weights)  # should equal number of groups (ligands)
+    #print('group_weights', group_weights)  # should equal number of groups (ligands)
 
     return X_combined, y, group, group_weights
 
