@@ -94,12 +94,12 @@ def plot_train_val_lc(curves):
             continue
         linestyle = '--' if set_name == 'train' else '-'
 
-        plt.plot(curve, linestyle=linestyle, color='black', alpha=0.9)
+        plt.plot(curve, linestyle=linestyle, color='black', alpha=0.9, label=set_name)
 
     plt.xlabel("Boosting iterations")
     plt.ylabel(METRIC)
     plt.title(f"Learning Curves (train & valid) - XGBRanker")
-    #plt.legend()
+    plt.legend()
     plt.grid(True)
     plt.tight_layout()
     plt.savefig(f"images/best_model_learning_curves.png", dpi=300)

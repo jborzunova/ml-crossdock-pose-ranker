@@ -5,6 +5,7 @@ from xgboost import XGBRanker
 from app.preprocessing import *
 from app.plots import *
 from app.analysis import *
+from app.save_learning_curve import *
 from tqdm import tqdm
 from parameters import *
 import joblib
@@ -35,7 +36,7 @@ if __name__ == "__main__":
         #print(f'ligands of cluster {val_cluster}:', df_val['ligand'].unique())
 
         X_train, y_train, group_train, weights_train = prepare_XGB_data(df_train, SVD_model)
-        print('weights_train', weights_train)
+        #print('weights_train', weights_train)
         #print('X_train.shape', X_train.shape)
         X_val, y_val, group_val, _ = prepare_XGB_data(df_val, SVD_model)
         #print('X_val.shape', X_val.shape)
@@ -62,4 +63,6 @@ if __name__ == "__main__":
     # mean_curves - is 2 Learning Curves (train and validation)
     mean_curves = get_combined_learning_curves(evals_results, metric=METRIC)
     print('learning curves =', mean_curves)
+    print(type(mean_curves))
+    save_learning_curve(mean_curves, best_params, 'best_params_lc')
     plot_train_val_lc(mean_curves)

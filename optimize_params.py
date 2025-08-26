@@ -2,6 +2,7 @@
 from app.optuna_objective import make_objective
 from app.preprocessing import *
 from app.plots import *
+from app.save_learning_curve import *
 import optuna
 import pandas as pd
 from sklearn.preprocessing import OneHotEncoder
@@ -37,5 +38,6 @@ if __name__ == "__main__":
     print(f"Best {METRIC}:", study.best_value)
     # ---- Plot Learning Curves for Model Parameters Tuning ----
     print('learning_curves_by_trial =', learning_curves_by_trial)
+    save_learning_curves_and_study(learning_curves_by_trial, study)
     plot_all_valid_learning_curves(learning_curves_by_trial, study)
     plot_topk_train_val_learning_curves(learning_curves_by_trial, study)

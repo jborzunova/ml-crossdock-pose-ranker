@@ -32,6 +32,6 @@ def get_combined_learning_curves(all_evals_results, metric="map@1"):
         min_len = min(len(c) for c in all_curves)
         trimmed_curves = np.array([c[:min_len] for c in all_curves])
         mean_curve = np.mean(trimmed_curves, axis=0)
-        combined_curves[set_name] = mean_curve
+        combined_curves[set_name] = mean_curve.tolist()
 
     return combined_curves
