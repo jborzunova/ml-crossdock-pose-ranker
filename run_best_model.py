@@ -13,8 +13,7 @@ import joblib
 
 if __name__ == "__main__":
     # === Load data ===
-    data, _ = data_read_prep()
-    SVD_model = joblib.load(SVD_MODEL_PATH)
+    data = data_read_prep()
     # === Load best params ===
     with open(PARAMS_PATH, "r") as f:
         best_params = json.load(f)
@@ -31,18 +30,12 @@ if __name__ == "__main__":
     # ---- LOLO algorithm ----
     for val_cluster in tqdm(unique_clusters, desc=f"LOCO Evaluation"):
         # ---- Prepare Data ----
-        df_train = data[data['lig_cluster'] != val_cluster].copy()
-        df_val = data[data['lig_cluster'] == val_cluster].copy()
-        #print(f'ligands of cluster {val_cluster}:', df_val['ligand'].unique())
-
-        X_train, y_train, group_train, weights_train = prepare_XGB_data(df_train, SVD_model)
-        #print('weights_train', weights_train)
-        #print('X_train.shape', X_train.shape)
-        X_val, y_val, group_val, _ = prepare_XGB_data(df_val, SVD_model)
-        #print('X_val.shape', X_val.shape)
-        #print('X_val', X_val)
-        #print('y_val', y_val)
-        #print('group_val', group_val)
+        X_train, y_train, group_train, weights_train, \
+        X_val, y_val, group_val = get_sets(data, val_cluster)
+        #print('train set:', X_train.shape, y_train.shape, group_train)
+        #print('val set', X_val.shape, y_val.shape)
+        #print('group_val:')
+        #print(group_val)
         model.fit(
                         X_train, y_train,
                         group=group_train,
@@ -63,6 +56,5 @@ if __name__ == "__main__":
     # mean_curves - is 2 Learning Curves (train and validation)
     mean_curves = get_combined_learning_curves(evals_results, metric=METRIC)
     print('learning curves =', mean_curves)
-    print(type(mean_curves))
     save_learning_curve(mean_curves, best_params, 'best_params_lc')
     plot_train_val_lc(mean_curves)

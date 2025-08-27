@@ -1,5 +1,4 @@
 DATA_PATH = "./data/raw/data_cross_ref_natives_ccf_rmsd.csv"
-SVD_MODEL_PATH = "models/svd_model.joblib"
 PARAMS_PATH = "models/best_params.json"         # Параметры, полученные после Optuna
 OBJECTIVE = 'rank:ndcg'
 METRIC = 'ndcg@1'  # currently only single-metric evaluation is implemented

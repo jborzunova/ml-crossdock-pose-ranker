@@ -12,11 +12,8 @@ import joblib
 
 if __name__ == "__main__":
     # ---- Data Preparation ----
-    data, ccf_data = data_read_prep()
-    _, SVD_model = reduce_dim(ccf_data)
-    joblib.dump(SVD_model, SVD_MODEL_PATH)  # save for run_best_model
-    #SVD_model = joblib.load(SVD_MODEL_PATH)  # for speed
-
+    data = data_read_prep()
+    
     # ---- Data Training and LOLO Evaluation ----
     print("\n=== Optuna Parameters Optimization ===")
 
@@ -25,7 +22,6 @@ if __name__ == "__main__":
 
     objective = make_objective(
                                 data=data,
-                                SVD_model=SVD_model,
                                 learning_curves_by_trial=learning_curves_by_trial
                                )
 

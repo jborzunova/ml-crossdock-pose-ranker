@@ -3,16 +3,14 @@ import numpy as np
 import pandas as pd
 from sklearn.decomposition import TruncatedSVD
 from parameters import *
+import os
 
 
 def data_read_prep():
     data = pd.read_csv(DATA_PATH, index_col=0)
     data['label'] = data['rmsd'].apply(rmsd_to_relevance)
     data = drop_zero_label_groups(data)  # в обучении и валидации эти данные не нужны. Только в тесте, после
-    #print('data.columns', data.columns)
-    ccf_data = extract_ccf(data)
-    #print('ccf_data.columns', ccf_data.columns)
-    return data, ccf_data
+    return data
 
 
 def ohe_receptor(data, ohe_encoder):
@@ -55,9 +53,11 @@ def drop_zero_label_groups(data: pd.DataFrame, group_col: str = 'ligand', label_
     return data[data[group_col].isin(valid_group_ids)].reset_index(drop=True)
 
 
-def reduce_dim(X, target_variance=TARGET_VARIANCE):
+def reduce_dim(data, target_variance=TARGET_VARIANCE):
     # ---- Dimensionality reduction ----
     # --- Auto-select n_components based on explained variance ---
+    X = extract_ccf(data)
+    print(X.columns)
     print('Reducing Dimensions of Data ...')
     max_components = min(X.shape[0] - 1, X.shape[1])
 
@@ -108,3 +108,54 @@ def prepare_XGB_data(df, svd_model):
 def extract_ccf(df):
     # Select only columns that are named with digits, like '0', '1', '2' ...
     return df[[col for col in df.columns if col.isdigit()]]
+
+
+def get_sets(data, val_cluster):
+    '''
+    SVD модель должна видеть только тренировочные данные. Поэтому ждя каждого кластера
+    нужно прогнать эти вычисления в отдельности. Далее если выборки с сокращенной
+    размерностью уже сохранены в папке, то вычислять заново не нужно
+    '''
+    folder = f"data/processed/cluster_{val_cluster}"
+    os.makedirs(folder, exist_ok=True)
+
+    paths = {
+        "X_train": f"{folder}/X_train.csv",
+        "y_train": f"{folder}/y_train.csv",
+        "group_train": f"{folder}/group_train.csv",
+        "weights_train": f"{folder}/weights_train.csv",
+        "X_val": f"{folder}/X_val.csv",
+        "y_val": f"{folder}/y_val.csv",
+        "group_val": f"{folder}/group_val.csv",
+    }
+
+    if all(os.path.exists(p) for p in paths.values()):
+        X_train = pd.read_csv(paths["X_train"], index_col=0)
+        y_train = pd.read_csv(paths["y_train"], index_col=0).squeeze()
+        group_train = pd.read_csv(paths["group_train"], index_col=0).squeeze().tolist()
+        weights_train = pd.read_csv(paths["weights_train"], index_col=0).squeeze().tolist()
+
+        X_val = pd.read_csv(paths["X_val"], index_col=0)
+        y_val = pd.read_csv(paths["y_val"], index_col=0).squeeze()
+        group_val = pd.read_csv(paths["group_val"], index_col=0).squeeze()
+        if isinstance(group_val, pd.Series):
+            group_val = group_val.tolist()
+        else:
+            group_val = [group_val]  # если это 1 число, то будет список с 1 элементом. Например, 1 лиганд в тесте и 90 поз. Будет [90]
+    else:
+        df_train = data[data['lig_cluster'] != val_cluster].copy()
+        df_val = data[data['lig_cluster'] == val_cluster].copy()
+
+        _, SVD_model = reduce_dim(df_train)
+        X_train, y_train, group_train, weights_train = prepare_XGB_data(df_train, SVD_model)
+        X_val, y_val, group_val, _ = prepare_XGB_data(df_val, SVD_model)
+
+        pd.DataFrame(X_train).to_csv(paths["X_train"])
+        pd.Series(y_train).to_csv(paths["y_train"])
+        pd.Series(group_train).to_csv(paths["group_train"])
+        pd.Series(weights_train).to_csv(paths["weights_train"])
+
+        pd.DataFrame(X_val).to_csv(paths["X_val"])
+        pd.Series(y_val).to_csv(paths["y_val"])
+        pd.Series(group_val).to_csv(paths["group_val"])
+    return X_train, y_train, group_train, weights_train, X_val, y_val, group_val

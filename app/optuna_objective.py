@@ -5,7 +5,7 @@ from tqdm import tqdm
 from parameters import *
 
 
-def make_objective(data, SVD_model, learning_curves_by_trial):
+def make_objective(data, learning_curves_by_trial):
     '''
     This function helps find the best parameters for ML model
     It trains the model and evaluate it on validation set with LOLO algorithm.
@@ -20,16 +20,12 @@ def make_objective(data, SVD_model, learning_curves_by_trial):
         # ---- LOLO algorithm ----
         for val_cluster in tqdm(unique_clusters,
                                 desc=f"LOCO Evaluation {trial.number}"):
-            # ---- Prepare Data ----
-            df_train = data[data['lig_cluster'] != val_cluster].copy()
-            df_val = data[data['lig_cluster'] == val_cluster].copy()
-            #print(f'ligands of cluster {val_cluster}:', df_val['ligand'].unique())
-
-            X_train, y_train, group_train, weights_train = prepare_XGB_data(df_train, SVD_model)
-            X_val, y_val, group_val, _ = prepare_XGB_data(df_val, SVD_model)
-            #print(X_train.shape, y_train.shape, len(group_train))
-            #print(X_val.shape, y_val.shape, len(group_val))
-            #print('y_val', y_val)
+            X_train, y_train, group_train, weights_train, \
+            X_val, y_val, group_val = get_sets(data, val_cluster)
+            print('train set:', X_train.shape, y_train.shape, group_train)
+            print('val set', X_val.shape, y_val.shape)
+            print('group_val:')
+            print(group_val)
             params = {
                         'objective': OBJECTIVE,
                         'eval_metric': METRIC,
@@ -53,21 +49,16 @@ def make_objective(data, SVD_model, learning_curves_by_trial):
                             verbose=False
                         )
             raw_result = model.evals_result()
-            #print('.............................')
-            #print('raw_result', raw_result)
-            #print('.............................')
             # Renaming automatic keys from Optuna manually
             mapped_result = {
-                    'train': raw_result.get('validation_0', {}),
-                    'valid': raw_result.get('validation_1', {})
-                }
+                                'train': raw_result.get('validation_0', {}),
+                                'valid': raw_result.get('validation_1', {})
+                             }
             evals_results.append(mapped_result)
 
         # ---- Get the Result of Cross-Validation for Optuna ----
-        # mean_curves - is 2 Learning Curves
-        #print('evals_results', evals_results)
+        # mean_curves - is 2 Learning Curves (train and validation)
         mean_curves = get_combined_learning_curves(evals_results, metric=METRIC)
-        #print('mean_curves =', mean_curves)
         learning_curves_by_trial[trial.number] = mean_curves
         return mean_curves['valid'][-1]  # The optimizer relies on the metric evaluated on the validation set
     return objective
