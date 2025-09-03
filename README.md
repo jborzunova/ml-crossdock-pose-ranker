@@ -3,7 +3,7 @@
 **Machine Learning model (XGBRanker) for cross-docking pose ranking.**  
 This project ranks docking poses so that the top-1 pose is native-like, improving accuracy in molecular docking tasks.
 
-> **⚠️ Note:** This project is still under active development and intended to be published in a scientific article.
+> **Note:** This project is still under active development and intended to be published in a scientific article.
 >
 > - The figures shown below are **preliminary** and may change.
 > - The dataset features are still being refined and extended.
