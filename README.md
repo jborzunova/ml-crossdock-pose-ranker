@@ -20,12 +20,18 @@ This project ranks docking poses so that the top-1 pose is native-like, improvin
 ## Repository Structure
 
 `````
-├── app/ # Application code 
+├── app/ # Application code
 ├── images/
 │   ├── all_valid_learning_curves.png
 │   └── topk_learning_curves.png
-├── data_crossdock_rmsd_ccf.csv # Dataset in CSV format
-├── main.py # Main script for training or inference
+|   └── best_model_learning_curves.png
+├── data/
+|   ├── raw
+|       ├── data_cross_ref_natives_ccf_rmsd.csv # Dataset in CSV format
+|   └── learning_curves  # values of plots
+|   └── processed  # here datasets for every cross-validation loop will be saved
+├── optimize_params.py  # Main script for Optuna search
+├── run_best_model.py  # run this script after Optuna search
 ├── parameters.py # Configuration and parameters for the model
 ├── README.md # This documentation file
 `````
@@ -49,18 +55,17 @@ Customize parameters in parameters.py.
 
 ## Results
 
-### Validation Learning Curves from Optuna Trials
-![All Validation Learning Curves](images/all_valid_learning_curves.png)
-
-This figure shows all validation learning curves obtained during hyperparameter optimization with **Optuna**.  
-The validation was performed using the **Leave-One-Ligand-Out (LOLO)** strategy to ensure robust generalization across ligands.  
-The **best-performing trial** (as selected by Optuna) is highlighted in **red**.
-
 ### Top-K Learning Curves (Train & Validation)
 ![Top-K Learning Curves](images/topk_learning_curves.png)
 
 This plot illustrates training and validation curves for the **top-K models** (ranked by validation performance).  
 It provides insight into model convergence and stability across the most successful configurations.
+
+### Best Model Learning Curves (Train & Validation)
+![Best Model Learning Curves (Train & Validation)](images/best_model_learning_curves.png)
+
+This plot shows the training and validation learning curves for the single best model, selected based on the highest validation performance across all configurations.
+It reflects how well the best configuration generalized during cross-validation, and can be used to assess overfitting or underfitting tendencies.
 
 ## Dataset
 
