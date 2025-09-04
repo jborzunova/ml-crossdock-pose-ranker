@@ -55,7 +55,7 @@ Customize parameters in parameters.py.
 
 ## Results
 
-### Top-K Learning Curves (Train & Validation)
+### All Learning Curves (Validation)
 ![All Learning Curves](images/all_valid_learning_curves.png)
 
 This plot illustrates validation curves for all models.  
