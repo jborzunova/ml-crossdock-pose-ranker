@@ -56,10 +56,10 @@ Customize parameters in parameters.py.
 ## Results
 
 ### Top-K Learning Curves (Train & Validation)
-![Top-K Learning Curves](images/topk_learning_curves.png)
+![All Learning Curves](images/all_valid_learning_curves.png)
 
-This plot illustrates training and validation curves for the **top-K models** (ranked by validation performance).  
-It provides insight into model convergence and stability across the most successful configurations.
+This plot illustrates validation curves for all models.  
+It provides insight into what hyperparameters should be chosen.
 
 ### Best Model Learning Curves (Train & Validation)
 ![Best Model Learning Curves (Train & Validation)](images/best_model_learning_curves.png)
