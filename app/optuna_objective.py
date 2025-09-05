@@ -22,10 +22,10 @@ def make_objective(data, learning_curves_by_trial):
                                 desc=f"LOCO Evaluation {trial.number}"):
             X_train, y_train, group_train, weights_train, \
             X_val, y_val, group_val = get_sets(data, val_cluster)
-            print('train set:', X_train.shape, y_train.shape, group_train)
-            print('val set', X_val.shape, y_val.shape)
-            print('group_val:')
-            print(group_val)
+            #print('train set:', X_train.shape, y_train.shape, group_train)
+            #print('val set', X_val.shape, y_val.shape)
+            #print('group_val:')
+            #print(group_val)
             params = {
                         'objective': OBJECTIVE,
                         'eval_metric': METRIC,

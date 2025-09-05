@@ -57,7 +57,7 @@ def reduce_dim(data, target_variance=TARGET_VARIANCE):
     # ---- Dimensionality reduction ----
     # --- Auto-select n_components based on explained variance ---
     X = extract_ccf(data)
-    print(X.columns)
+    #print(X.columns)
     print('Reducing Dimensions of Data ...')
     max_components = min(X.shape[0] - 1, X.shape[1])
 
