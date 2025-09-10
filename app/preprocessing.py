@@ -35,7 +35,7 @@ def rmsd_to_relevance(rmsd: float) -> int:
 
 def drop_zero_label_groups(data: pd.DataFrame, group_col: str = 'ligand', label_col: str = 'label') -> pd.DataFrame:
     """
-    Drops all groups from the dataframe where all labels are zero.
+    Drops all groups from the dataframe where all labels of cross-docking are zero.
 
     Parameters:
         data (pd.DataFrame): Input DataFrame with at least 'group_id' and 'label' columns.
@@ -45,9 +45,9 @@ def drop_zero_label_groups(data: pd.DataFrame, group_col: str = 'ligand', label_
     Returns:
         pd.DataFrame: Filtered DataFrame with only groups that have at least one non-zero label.
     """
+    cross_data = data[data[docking_type_col] == 'cross']
     # Identify groups with at least one non-zero label
-    valid_groups = data.groupby(group_col)[label_col].apply(lambda x: (x != 0).any())
-
+    valid_groups = cross_data.groupby(group_col)[label_col].apply(lambda x: (x != 0).any())
     # Filter to keep only valid groups
     valid_group_ids = valid_groups[valid_groups].index
     return data[data[group_col].isin(valid_group_ids)].reset_index(drop=True)
