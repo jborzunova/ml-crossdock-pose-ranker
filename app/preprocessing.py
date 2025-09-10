@@ -45,7 +45,7 @@ def drop_zero_label_groups(data: pd.DataFrame, group_col: str = 'ligand', label_
     Returns:
         pd.DataFrame: Filtered DataFrame with only groups that have at least one non-zero label.
     """
-    cross_data = data[data[docking_type_col] == 'cross']
+    cross_data = data[data['docking_type'] == 'cross']
     # Identify groups with at least one non-zero label
     valid_groups = cross_data.groupby(group_col)[label_col].apply(lambda x: (x != 0).any())
     # Filter to keep only valid groups
@@ -148,6 +148,7 @@ def get_sets(data, val_cluster):
 
         _, SVD_model = reduce_dim(df_train)
         X_train, y_train, group_train, weights_train = prepare_XGB_data(df_train, SVD_model)
+        #df_val = df_val[df_val['docking_type'] == 'cross']  # for test in run_best_model we take only cross data
         X_val, y_val, group_val, _ = prepare_XGB_data(df_val, SVD_model)
 
         pd.DataFrame(X_train).to_csv(paths["X_train"])
