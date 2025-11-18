@@ -1,10 +1,17 @@
 name: pose_ranker
 channels:
+  - conda-forge
   - defaults
 dependencies:
-  - pip
+  - python=3.10
   - scikit-learn
   - xmltodict
   - psutil
   - seaborn
-prefix: /home/jborzunova/miniconda3/envs/pose_ranker
+  - matplotlib
+  - tqdm
+  - pandas
+  - xgboost
+  - pip
+  - pip:
+      - optuna
