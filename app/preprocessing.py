@@ -81,27 +81,36 @@ def prepare_XGB_data(df, svd_model):
     # Target and group
     y = df['label'].values
     group = df.groupby('ligand').size().tolist()
-    # Extract the fingerprint features and apply SVD
-    ccf_raw = extract_ccf(df)  # should return only fingerprint columns
+    # === Fingerprint features reduced by SVD ===
+    ccf_raw = extract_ccf(df)  # fingerprint columns only
     ccf_reduced = svd_model.transform(ccf_raw)
-    # Extract one-hot encoded receptor columns (starts with "receptor_")
+    # создаём имена для SVD-компонент
+    svd_feature_names = [f"svd_{i}" for i in range(ccf_reduced.shape[1])]
+    # === Молекулярные признаки ===
     mol_weight_features = df[['mol_weight_ligand', 'mol_weight_native']].values
-    delta_mol_weight_features = (df['mol_weight_ligand'] - df['mol_weight_native']).values.reshape(-1, 1)
-    abs_delta_mol_weight_features = np.abs(df["mol_weight_ligand"] - df["mol_weight_native"]).values.reshape(-1, 1)
+    mol_weight_names = ['mol_weight_ligand', 'mol_weight_native']
 
-    # Concatenate SVD-reduced fingerprint and receptor one-hot features
-    X_combined = np.hstack([ccf_reduced, mol_weight_features, delta_mol_weight_features, abs_delta_mol_weight_features])
+    additional_features_names = ['vina_score','cnn_score','gauss0','gauss3',
+                              'repulsion','hydrophobic','hbond','hydrophobic_interactions',
+                              'water_bridges','salt_bridges','pi_stacks',
+                              'pi_cation_interactions','halogen_bonds',
+                              'metal_complexes']
+    additional_features = df[additional_features_names].values
 
-    # Calculate weights based on lig_cluster frequency
+    delta_mol_weight = (df['mol_weight_ligand'] - df['mol_weight_native']).values.reshape(-1, 1)
+    abs_delta_mol_weight = np.abs(df['mol_weight_ligand'] - df['mol_weight_native']).values.reshape(-1, 1)
+    delta_names = ['delta_mol_weight', 'abs_delta_mol_weight']
+    # === Объединяем ===
+    X_combined = np.hstack([ccf_reduced, mol_weight_features, delta_mol_weight, abs_delta_mol_weight, additional_features])
+    # создаём DataFrame с понятными именами
+    feature_names = svd_feature_names + mol_weight_names + delta_names + additional_features_names
+    X_combined = pd.DataFrame(X_combined, columns=feature_names)
+    # === Calculate weights based on lig_cluster frequency ===
     cluster_counts = df['lig_cluster'].value_counts() / 88
-    #print('cluster_counts', cluster_counts)
     df['weight'] = 1.0 / df['lig_cluster'].map(cluster_counts)
     df['weight'] /= df['weight'].mean()  # normalize
 
-    # Aggregate to ligand group level
     group_weights = df.groupby('ligand')['weight'].mean()
-    #print('group_weights', group_weights)  # should equal number of groups (ligands)
-
     return X_combined, y, group, group_weights
 
 
@@ -145,7 +154,6 @@ def get_sets(data, val_cluster):
     else:
         df_train = data[data['lig_cluster'] != val_cluster].copy()
         df_val = data[data['lig_cluster'] == val_cluster].copy()
-
         _, SVD_model = reduce_dim(df_train)
         X_train, y_train, group_train, weights_train = prepare_XGB_data(df_train, SVD_model)
         #df_val = df_val[df_val['docking_type'] == 'cross']  # for test in run_best_model we take only cross data

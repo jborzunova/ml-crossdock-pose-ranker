@@ -2,6 +2,8 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 from parameters import *
 import numpy as np
+import pandas as pd
+import seaborn as sns
 
 
 def plot_all_valid_learning_curves(learning_curves_by_trial, study):
@@ -103,4 +105,29 @@ def plot_train_val_lc(curves):
     plt.grid(True)
     plt.tight_layout()
     plt.savefig(f"images/best_model_learning_curves.png", dpi=300)
+    plt.show()
+
+
+def plot_feature_importance(all_importances):
+     # ---- Собираем в DataFrame ----
+    importance_df = pd.concat(all_importances, axis=1).fillna(0)
+    # ---- Усредняем по всем LOCO ----
+    mean_importance = importance_df.mean(axis=1).sort_values(ascending=False)
+    importance_final = mean_importance.reset_index()
+    importance_final.columns = ['feature', 'importance']
+    print('all features:', list(importance_final['feature']))
+    print("\n=== Топ-10 признаков по средней важности ===")
+    print(importance_final.head(10))
+    # ---- Сохраняем ----
+    #importance_final.to_csv("feature_importance_mean.csv", index=False)
+    # ---- Визуализация ----
+    plt.figure(figsize=(10, 6))
+    sns.barplot(
+        x='importance',
+        y='feature',
+        data=importance_final,
+        color='skyblue'
+    )
+    plt.title("Средняя важность признаков XGBRanker (LOCO, gain)")
+    plt.tight_layout()
     plt.show()
