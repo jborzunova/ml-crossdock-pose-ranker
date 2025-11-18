@@ -1,0 +1,10 @@
+name: pose_ranker
+channels:
+  - defaults
+dependencies:
+  - pip
+  - scikit-learn
+  - xmltodict
+  - psutil
+  - seaborn
+prefix: /home/jborzunova/miniconda3/envs/pose_ranker
